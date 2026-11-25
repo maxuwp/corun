@@ -46,7 +46,8 @@ Each role has a fallback chain and a number of partners to pick:
 - Corun uses the first healthy partners in the chain, in order.
 - End every chain with a Claude fallback (`claude-opus`, `claude-sonnet` or `claude-haiku`) so the role always has someone.
 - To stop using a partner, remove it from the chains, or leave it out of `partners`.
-- `pick` sets how many partners the role uses at once; reviewers use two.
+- `pick` sets how many partners the declaration lists for the role. Each `ask` call returns one partner's answer, so Claude makes one call per partner, adding `--exclude` for those already used; reviewers use two.
+- `"web": true` gives a role web search and no project grant (Grok then gets only its web tools); the bundled `models.json` sets it for the runner only. Codex in a web role can still read the disk, so keep web roles on Grok.
 
 The roles are `planner` (independent plan, copy edit), `worker` (self-contained code), `reviewer` (review gate), `checker` (fact and consistency check) and `runner` (narrow searches). Renaming roles also requires editing `SKILL.md`, which tells Claude when to call each role.
 
@@ -76,7 +77,7 @@ Follow `reference/refresh.md`: gather model cards and benchmarks with the runner
 python3 ~/.claude/skills/corun/scripts/corun.py scan ~/.claude/skills/corun
 ```
 
-The scan fails on home-directory paths, your user name, your git email, email addresses, API keys, tokens and local state files. Run the tests as well:
+The scan reads the files git would publish and the text inside images, and fails on home-directory paths that name a user, your user name, your git email, email addresses, common API key and token formats, credential fields and local state files. It is pattern-based, so read the diff as well. Run the tests as well:
 
 ```bash
 cd ~/.claude/skills/corun && python3 -m unittest discover -s tests

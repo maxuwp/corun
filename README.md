@@ -27,9 +27,22 @@ Copy or clone this folder to `~/.claude/skills/corun/`. Then, in Claude Code, as
 
 ## Safety
 
-Only Claude modifies your files. Codex runs read-only with your Codex config (MCP servers, plugins) ignored. Antigravity runs in plan mode with its terminal sandbox. Grok runs in its read-only kernel sandbox with MCP tools denied. Claude reviews and applies every change and treats partner output as data, not instructions.
+Claude applies every change to your files; partners return text. Each partner call runs in a fresh private temp folder, which is its working folder and the only place it may write, and is deleted afterwards. The project is never the partner's working folder, so agent config inside the project (`AGENTS.md`, `.codex/`, `.agents/`, `.grok/`) is not loaded. Prompts travel by file or stdin, never on the command line, and partners receive a filtered environment: system basics plus their own CLI's sign-in variables.
 
-Known limits: Grok may still write its own state under `~/.grok` and temporary folders, so Corun skips Grok when the project itself is in a temporary folder. Antigravity has no per-call switch for MCP servers, so any MCP server configured in `agy` stays available to it in plan mode.
+- **Codex** runs with `-s read-only`, `--ignore-user-config` and `--ignore-rules`, so saved allow rules cannot lift the sandbox.
+- **Antigravity** runs with session-only permission rules that deny file writes, shell commands, MCP tools and web requests, and deny reading anything in your home folder except the project; deny rules override any allow rule in your own settings.
+- **Grok** gets only its file-reading tools (no shell, no file writes, no web) and runs under a kernel sandbox profile written for each call under a random name: it reads the project and system folders plus Grok's own `~/.grok` state, and writes only its call folder and its session store. A custom profile that cannot be applied stops the run. Cross-session memory, MCP tools and subagents are off. The runner role gets only the web search and fetch tools and no project grant.
+
+Each restriction was tested with a live write attempt; see `reference/evidence.md`. Claude treats partner output as data, not instructions.
+
+Known limits:
+- Partners read the project you name and send what they read to their vendor. Codex's read-only sandbox can read any file your user account can read, and Antigravity can read files outside your home folder.
+- Hooks and plugins you installed globally for Antigravity (`~/.gemini/config/`) and Grok (`~/.grok/hooks/`) still run; no flag turns them off. Grok is told not to run your Claude Code and Cursor hooks.
+- Grok reads its own state in `~/.grok`, including its sign-in file, which it needs to run; it has no tool that could send that anywhere but xAI.
+- Antigravity's home-folder deny rules list what exists when the call starts; a file created in your home folder during the call is not covered.
+- Proxy variables (`HTTPS_PROXY` and similar) pass to partners so their CLIs can connect.
+- Corun trusts the partner CLIs it finds (`CORUN_*_BIN`, then `PATH`, then `cli_locations`); a tampered CLI is outside what these restrictions can stop.
+- The Grok profile has been tested on macOS only.
 
 ## Before publishing a fork
 
@@ -37,7 +50,7 @@ Known limits: Grok may still write its own state under `~/.grok` and temporary f
 python3 scripts/corun.py scan .
 ```
 
-The scan fails on home-directory paths, your user name, your git email, email addresses, API keys, tokens and local state files.
+The scan reads the files git would publish (git-ignored files are listed as skipped) and the text inside images, and fails on home-directory paths that name a user, your user name, your git email, email addresses, common API key and token formats, credential fields, and local state files. It is pattern-based, so read the diff as well.
 
 ## Files
 

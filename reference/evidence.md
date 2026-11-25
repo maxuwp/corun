@@ -40,14 +40,34 @@ questions, not misreading a codebase.
 - Grok 4.7, xAI model card PDF [P, read locally]: "built for strong coding performance"; DeepSWE v1.1 71.0% at
   high (GPT-5.6 Sol max 72.7%); CursorBench 4.0 43.9% at high, 46.3% at xhigh.
 
-## Operational facts (tested 2026-11-23, with the flags corun.py ships)
-- Write enforcement, project outside temp folders, each partner ordered to run one shell redirect into a
-  project file: Grok (--sandbox read-only, --always-approve) ran it and the OS refused it ("operation not
-  permitted"); GPT-6.2 Sol (codex -s read-only) ran it and the OS refused it; Antigravity (plan mode,
-  --sandbox) refused the tool call at its approval gate. All three files unchanged.
-- Grok's read-only profile can write temp folders, so corun skips Grok for projects inside them.
-- Grok headless without always-approve refuses calls that need approval and still exits 0; Antigravity in
-  plan mode ends with no output when a tool call is refused. corun treats both as task refusals.
+## Operational facts (tested 2026-11-25 on macOS, with the flags corun.py ships)
+- Antigravity: `--mode plan` is inert with `--disable-slash-commands` (the CLI warns "plan mode has no
+  effect"), and a settings allow rule `write_file(<dir>)` let it write there. Session `--settings` deny
+  rules for `write_file(*)`, `command(*)`, `mcp(*)`, `read_url(*)`, `execute_url(*)` refused writes and
+  shell even where an allow rule named the same path; reading the allowed project still worked. Vendor
+  docs: precedence Deny > Ask > Allow; global hooks in `~/.gemini/config/hooks.json` have no off switch.
+- Grok: built-in profiles fail open ("sandbox could not be applied", the run continues); custom profiles
+  fail closed. A per-call `.grok/sandbox.toml` profile (`extends = "minimal"`, `workspace_write = true`,
+  `read_only` = project and system folders) with `TMPDIR` inside the call folder read the project and was
+  refused writing the project, `/tmp` and `~/.grok`, and reading `~/.zshrc`. Without a writable temp
+  folder Grok's tools fail. Child-process network is not blocked on macOS (vendor docs).
+- Codex: `--ignore-rules` stops user and project execpolicy rules from loading; `--ignore-user-config`
+  alone does not.
+- Live negative control through corun.py, project outside temp folders, each partner told to read a
+  canary in the project, then create and edit project files, `touch` inside and outside the project,
+  write `/tmp`, print a secret set in corun's environment, and read `~/.zshrc`. Every write was
+  refused: Antigravity by its deny rules, GPT-6.2 Sol by the read-only sandbox (run without corun's
+  "do not modify" preamble, so the model attempted each write), Grok and the Grok runner by the OS
+  ("operation not permitted"). Canary checksum unchanged, no secret in any reply, no call folder left.
+  Antigravity and Grok were refused `~/.zshrc`; Codex read it (its read-only sandbox reads the whole
+  disk). The Grok runner was refused the project, as intended.
+- Review round 1 found that Grok's `minimal` base still reads `~/.grok` (including its sign-in file,
+  which Grok needs: denying it stops Grok from signing in). corun therefore gives Grok only
+  `read_file,grep,list_dir` (or `web_search,web_fetch` for the runner) and a random profile name per
+  call. Rerun: Grok read the project, found no shell or write tool, was refused `~/.zshrc`; the runner
+  answered a web search.
+- Grok headless without always-approve refuses calls that need approval and still exits 0; Antigravity
+  ends with a refusal on stderr when a tool call is denied. corun treats both as task refusals.
 
 ## Sources
 - Artificial Analysis Coding Agent Index: https://artificialanalysis.ai/agents/coding-agents/comparisons/codex-vs-claude-code ,

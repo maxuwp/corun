@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-23",
+  "updated": "2026-11-25",
   "evidence": "reference/evidence.md",
   "partners": {
     "neon": {
@@ -60,6 +60,7 @@
     "runner": {
       "purpose": "narrow, fixed-format searches and lookups",
       "pick": 1,
+      "web": true,
       "chain": ["grok", "claude-haiku"]
     }
   },
