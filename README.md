@@ -2,6 +2,8 @@
 
 A Claude Code skill that lets Claude coordinate work with partner AIs from other vendors. The name sounds like "quorum": a decision passes when independent voices agree.
 
+![Corun system diagram](docs/corun-diagram.png)
+
 Claude stays the coordinator. Gemini, GPT and Grok contribute independent plans, self-contained modules, two-reviewer merge gates, copy edits, fact checks and scoped web searches. It works with any subset of these partners and falls back to Claude subagents for missing ones.
 
 ## Requirements
@@ -45,6 +47,7 @@ The scan fails on home-directory paths, your user name, your git email, email ad
 - `reference/refresh.md`: updating models after a release.
 - `reference/evidence.md`: the dated evidence behind the current role assignment.
 - `scripts/corun.py`: partner calls, roster, declaration. `scripts/scan.py`: privacy scan.
+- `docs/CUSTOMIZE.md`: changing models, efforts, roles and the process.
 - `BACKLOG.md`: planned work.
 
 ## Licence
